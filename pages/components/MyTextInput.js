@@ -5,8 +5,7 @@ const Mytextinput = (props) => {
   return (
     <View
       style={{
-        marginLeft: 15,
-        marginRight: 15,
+        marginHorizontal: 15,
         marginTop: 15,
         borderColor: '#999',
         borderWidth: 1, 

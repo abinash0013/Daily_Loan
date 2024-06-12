@@ -4,27 +4,40 @@ import { openDatabase } from 'react-native-sqlite-storage';
 import Mybutton from './components/MyButton';
 import DatePicker from './components/DatePicker';
 import { useFocusEffect } from '@react-navigation/native';
+import Dropdown from './components/Dropdown';
+import { formatDate, getYesterdayDate } from './utils/formatDateUtils';
 
 var db = openDatabase({ name: 'UserDatabase.db' });
 
-const ViewAllUser = ({navigation}) => {
-  const [date, setDate] = useState(new Date());
+const ViewAllUser = ({navigation}) => { 
   const [flatListItems, setFlatListItems] = useState([]); 
- 
-  const onChangeDate = (selectedDate) => {
-    console.log("selectedDateLo",selectedDate);
-    const formattedDate = moment(selectedDate).format("DD/MM/YYYY");
-    console.log("formattedDate",moment(selectedDate).format("DD/MM/YYYY"));
 
-    setDate(moment(selectedDate).format("DD/MM/YYYY"));
+  const data = [
+    { label: 'Yesterday', value: getYesterdayDate() },
+    { label: 'Today', value: new Date().toISOString() },
+  ];
+
+  const handleSelect = (item) => {   
+    fetchRecordsForDate(formatDate(item.value));
   };
 
-  // Get today's date
-  const today = new Date();
-
-  // Calculate yesterday's date
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
+  const fetchRecordsForDate = (date) => {
+    console.log("fetchRecordsForDatedate", date);
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM table_user WHERE date = ?',
+        [date],
+        (tx, results) => {
+          const temp = [];
+          for (let i = 0; i < results.rows.length; ++i) temp.push(results.rows.item(i));
+          setFlatListItems(temp);
+        },
+        (tx, error) => {
+          console.log('Error fetching records:', error);
+        }
+      );
+    });
+  };
 
   const loadUsers = () => {
     db.transaction((tx) => {
@@ -33,7 +46,11 @@ const ViewAllUser = ({navigation}) => {
         [],
         (tx, results) => {
           const temp = [];
-          for (let i = 0; i < results.rows.length; ++i) temp.push(results.rows.item(i));
+          for (let i = 0; i < results.rows.length; ++i) {
+            const item = results.rows.item(i);
+            console.log("Row_item:", item); // Log each item
+            temp.push(item);
+          }
           setFlatListItems(temp);
         }
       );
@@ -72,7 +89,7 @@ const ViewAllUser = ({navigation}) => {
         key={index}
         style={{flexDirection:"row", backgroundColor: index % 2 === 0 ? "#fff" : "#e8e6e3"}}
       >
-        <Text style={styles.row}>{item.user_id}</Text>
+        {/* <Text style={styles.row}>{item.user_id}</Text> */}
         <Text style={styles.row}>{item.user_name}</Text>
         <Text style={styles.row}>{item.amount}</Text>
         <Text style={styles.row}>{item.date}</Text>
@@ -83,24 +100,13 @@ const ViewAllUser = ({navigation}) => {
 
   return (
     <> 
-      <View style={{flexDirection:"row", justifyContent:"center", alignItems:"center"}}> 
-        <View style={{ }}>
-          <Text style={{color:"#000", fontWeight:"bold"}}>
-            Selected Date: 
-            {date.toLocaleDateString()}
-          </Text> 
-        </View>
-        <DatePicker 
-          date={date} 
-          onChange={onChangeDate} 
-          // maximumDate={today}
-          minimumDate={yesterday}
-        />
-      </View>
+      <View style={{}}>
+        <Dropdown label="Select Date:" data={data} onSelect={handleSelect} />  
+      </View> 
       <SafeAreaView style={{ flex: 9 }}> 
         <View style={styles.tableContainer}>
           <View style={styles.tableHeaderInnerContainer}>
-            <View style={styles.tableHeaderTag}><Text style={styles.tableHeaderText}>Sl. No.</Text></View>
+            {/* <View style={styles.tableHeaderTag}><Text style={styles.tableHeaderText}>Sl.</Text></View> */}
             <View style={styles.tableHeaderTag}><Text style={styles.tableHeaderText}>Name</Text></View>
             <View style={styles.tableHeaderTag}><Text style={styles.tableHeaderText}>Amount</Text></View>
             <View style={styles.tableHeaderTag}><Text style={styles.tableHeaderText}>Date</Text></View>
